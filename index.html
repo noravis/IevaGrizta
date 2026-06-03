@@ -71,7 +71,7 @@ canvas#stars-c{
 .map-wrap svg{width:100%;height:auto;overflow:visible}
 .btn-row{
   display:flex;gap:1rem;flex-wrap:wrap;justify-content:center;
-  margin-top:1rem;position:relative;min-height:120px;width:100%;
+  margin-top:1rem;position:relative;min-height:60px;width:100%;
 }
 .btn-welcome{
   background:linear-gradient(135deg,#ffd700 0%,#ff8c00 100%);
@@ -81,20 +81,22 @@ canvas#stars-c{
   box-shadow:0 4px 24px rgba(255,215,0,.4);
   transition:transform .15s,box-shadow .15s;
   letter-spacing:.02em;
+  z-index:10;
+  position:relative;
 }
 .btn-welcome:hover{transform:scale(1.06);box-shadow:0 6px 32px rgba(255,215,0,.6)}
 .btn-welcome:active{transform:scale(.97)}
-.btn-ams-container{position:absolute;width:120px;height:50px}
+.btn-ams-container{position:fixed;width:auto;height:auto;z-index:5;pointer-events:auto}
 .btn-ams{
   background:rgba(255,255,255,.08);
   color:rgba(255,255,255,.6);
   border:1px solid rgba(255,255,255,.2);
   border-radius:50px;
-  padding:.8rem 1.8rem;font-family:'Lato',sans-serif;
-  font-weight:400;font-size:.95rem;cursor:pointer;
+  padding:.8rem 1.2rem;font-family:'Lato',sans-serif;
+  font-weight:400;font-size:.85rem;cursor:pointer;
   white-space:nowrap;
-  width:100%;
-  height:100%;
+  overflow:hidden;
+  text-overflow:ellipsis;
 }
 .celebration-msg{
   position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
@@ -206,12 +208,13 @@ canvas#stars-c{
 
   <div class="btn-row" id="btnRow">
     <button class="btn-welcome" id="btnWelcome">🎉 Sveika sugrįžus namo!</button>
-    <div class="btn-ams-container" id="amsContainer">
-      <button class="btn-ams" id="btnAms">🛫 Grįžti į Amsterdamą</button>
-    </div>
   </div>
 
 </div>
+</div>
+
+<div class="btn-ams-container" id="amsContainer">
+  <button class="btn-ams" id="btnAms">🛫 Grįžti į Amsterdamą</button>
 </div>
 
 <script>
@@ -296,43 +299,43 @@ animPlane();
 
 // ── Dodge button ───────────────────────────────────────
 const amsContainer=document.getElementById('amsContainer');
-const btnRow=document.getElementById('btnRow');
+const btnWelcome=document.getElementById('btnWelcome');
 const btnAms=document.getElementById('btnAms');
 let dodgeActive=false;
 
 function dodgeAms(e){
-  // Don't dodge on click/touch if already dodging
-  if(e.type === 'mousedown' || e.type === 'touchstart') {
-    if(dodgeActive) {
-      e.preventDefault();
-      return;
-    }
-  }
-  
   // Prevent dodge spam for movement events
   if(dodgeActive) return;
   dodgeActive=true;
   
-  const rowRect=btnRow.getBoundingClientRect();
-  const containerRect=amsContainer.getBoundingClientRect();
+  const welcomeRect=btnWelcome.getBoundingClientRect();
+  const amsRect=amsContainer.getBoundingClientRect();
   
-  const btnW=120;
-  const btnH=50;
+  // Button dimensions
+  const btnW=amsRect.width||150;
+  const btnH=amsRect.height||45;
   
-  // Calculate available space relative to btn-row
-  const margin=30;
-  const maxX=rowRect.width - btnW - margin;
-  const maxY=rowRect.height - btnH - margin;
+  // Get click-able button position and size
+  const welX=welcomeRect.left;
+  const welY=welcomeRect.top;
+  const welW=welcomeRect.width;
+  const welH=welcomeRect.height;
   
-  // Generate random position, avoiding current position
-  let nx, ny, distance;
+  // Generate random position on screen, but avoid the clickable button
+  let nx, ny, overlaps;
+  let attempts=0;
   do {
-    nx=margin+Math.random()*Math.max(0, maxX-margin);
-    ny=margin+Math.random()*Math.max(0, maxY-margin);
-    const currentX=parseInt(amsContainer.style.left||margin);
-    const currentY=parseInt(amsContainer.style.top||margin);
-    distance=Math.sqrt((nx-currentX)**2+(ny-currentY)**2);
-  } while(distance<80); // Ensure significant movement
+    nx=Math.random()*(window.innerWidth-btnW);
+    ny=Math.random()*(window.innerHeight-btnH);
+    
+    // Check if dodge button overlaps with welcome button
+    const dodgeX=nx;
+    const dodgeY=ny;
+    overlaps=(dodgeX<welX+welW+20&&dodgeX+btnW>welX-20&&
+              dodgeY<welY+welH+20&&dodgeY+btnH>welY-20);
+    
+    attempts++;
+  } while(overlaps&&attempts<50);
   
   amsContainer.style.left=nx+'px';
   amsContainer.style.top=ny+'px';
@@ -358,7 +361,7 @@ btnAms.addEventListener('touchmove',(e)=>{
 },{passive:false});
 
 // Initial position
-amsContainer.style.position='absolute';
+amsContainer.style.position='fixed';
 amsContainer.style.left='20px';
 amsContainer.style.top='20px';
 
