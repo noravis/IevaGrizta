@@ -86,7 +86,7 @@ canvas#stars-c{
 }
 .btn-welcome:hover{transform:scale(1.06);box-shadow:0 6px 32px rgba(255,215,0,.6)}
 .btn-welcome:active{transform:scale(.97)}
-.btn-ams-container{position:absolute;width:auto;height:auto;z-index:5;pointer-events:auto}
+.btn-ams-container{position:fixed;width:auto;height:auto;z-index:5;pointer-events:auto}
 .btn-ams{
   background:rgba(255,255,255,.08);
   color:rgba(255,255,255,.6);
@@ -208,12 +208,13 @@ canvas#stars-c{
 
   <div class="btn-row" id="btnRow">
     <button class="btn-welcome" id="btnWelcome">🎉 Sveika sugrįžus namo!</button>
-    <div class="btn-ams-container" id="amsContainer">
-      <button class="btn-ams" id="btnAms">🛫 Grįžti į Amsterdamą</button>
-    </div>
   </div>
 
 </div>
+</div>
+
+<div class="btn-ams-container" id="amsContainer">
+  <button class="btn-ams" id="btnAms">🛫 Grįžti į Amsterdamą</button>
 </div>
 
 <script>
@@ -298,7 +299,6 @@ animPlane();
 
 // ── Dodge button ───────────────────────────────────────
 const amsContainer=document.getElementById('amsContainer');
-const btnRow=document.getElementById('btnRow');
 const btnWelcome=document.getElementById('btnWelcome');
 const btnAms=document.getElementById('btnAms');
 let dodgeActive=false;
@@ -308,7 +308,6 @@ function dodgeAms(e){
   if(dodgeActive) return;
   dodgeActive=true;
   
-  const rowRect=btnRow.getBoundingClientRect();
   const welcomeRect=btnWelcome.getBoundingClientRect();
   const amsRect=amsContainer.getBoundingClientRect();
   
@@ -316,29 +315,21 @@ function dodgeAms(e){
   const btnW=amsRect.width||150;
   const btnH=amsRect.height||45;
   
-  // Calculate available space within btn-row
-  const margin=20;
-  const maxX=Math.max(0, rowRect.width - btnW - margin);
-  const maxY=Math.max(0, rowRect.height - btnH - margin);
+  // Safety margin around welcome button to avoid overlap
+  const safetyMargin=40;
   
-  // Generate random position within btn-row, but avoid the clickable button
+  // Generate random position on full screen, but avoid the clickable button
   let nx, ny, overlaps;
   let attempts=0;
   do {
-    nx=margin+Math.random()*Math.max(0, maxX-margin);
-    ny=margin+Math.random()*Math.max(0, maxY-margin);
+    nx=Math.random()*(window.innerWidth-btnW);
+    ny=Math.random()*(window.innerHeight-btnH);
     
-    // Get welcome button position relative to btn-row
-    const welXInRow=welcomeRect.left-rowRect.left;
-    const welYInRow=welcomeRect.top-rowRect.top;
-    const welW=welcomeRect.width;
-    const welH=welcomeRect.height;
-    
-    // Check if dodge button overlaps with welcome button
+    // Check if dodge button overlaps or gets too close to welcome button
     const dodgeX=nx;
     const dodgeY=ny;
-    overlaps=(dodgeX<welXInRow+welW+30&&dodgeX+btnW>welXInRow-30&&
-              dodgeY<welYInRow+welH+30&&dodgeY+btnH>welYInRow-30);
+    overlaps=(dodgeX<welcomeRect.right+safetyMargin&&dodgeX+btnW>welcomeRect.left-safetyMargin&&
+              dodgeY<welcomeRect.bottom+safetyMargin&&dodgeY+btnH>welcomeRect.top-safetyMargin);
     
     attempts++;
   } while(overlaps&&attempts<50);
@@ -367,8 +358,9 @@ btnAms.addEventListener('touchmove',(e)=>{
 },{passive:false});
 
 // Initial position - close to welcome button
-amsContainer.style.left='10px';
-amsContainer.style.top='5px';
+const welcomeRect=btnWelcome.getBoundingClientRect();
+amsContainer.style.left=(welcomeRect.right+10)+'px';
+amsContainer.style.top=welcomeRect.top+'px';
 
 // ── Fireworks ──────────────────────────────────────────
 const fwc=document.getElementById('fw-canvas');
