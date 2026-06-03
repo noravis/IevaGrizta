@@ -71,7 +71,7 @@ canvas#stars-c{
 .map-wrap svg{width:100%;height:auto;overflow:visible}
 .btn-row{
   display:flex;gap:1rem;flex-wrap:wrap;justify-content:center;
-  margin-top:1rem;position:relative;min-height:80px;width:100%;
+  margin-top:1rem;position:relative;min-height:120px;width:100%;
 }
 .btn-welcome{
   background:linear-gradient(135deg,#ffd700 0%,#ff8c00 100%);
@@ -84,7 +84,7 @@ canvas#stars-c{
 }
 .btn-welcome:hover{transform:scale(1.06);box-shadow:0 6px 32px rgba(255,215,0,.6)}
 .btn-welcome:active{transform:scale(.97)}
-.btn-ams-container{position:relative}
+.btn-ams-container{position:absolute;width:120px;height:50px}
 .btn-ams{
   background:rgba(255,255,255,.08);
   color:rgba(255,255,255,.6);
@@ -92,8 +92,9 @@ canvas#stars-c{
   border-radius:50px;
   padding:.8rem 1.8rem;font-family:'Lato',sans-serif;
   font-weight:400;font-size:.95rem;cursor:pointer;
-  transition:left .1s ease,top .1s ease;
   white-space:nowrap;
+  width:100%;
+  height:100%;
 }
 .celebration-msg{
   position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
@@ -148,7 +149,7 @@ canvas#stars-c{
           <feGaussianBlur stdDeviation="2" result="blur"/>
           <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
         </filter>
-        <clipPath id="faceClip"><circle cx="0" cy="0" r="9"/></clipPath>
+        <clipPath id="faceClip"><circle cx="0" cy="0" r="15"/></clipPath>
       </defs>
 
       <!-- Netherlands (left) -->
@@ -181,19 +182,19 @@ canvas#stars-c{
         <!-- Plane body -->
         <g id="planeInner" transform="rotate(0)">
           <!-- fuselage -->
-          <ellipse cx="0" cy="0" rx="16" ry="6" fill="white" opacity=".97"/>
+          <ellipse cx="0" cy="0" rx="24" ry="9" fill="white" opacity=".97"/>
           <!-- nose -->
-          <ellipse cx="12" cy="0" rx="6" ry="4.5" fill="#e8e8e8"/>
+          <ellipse cx="18" cy="0" rx="9" ry="6.5" fill="#e8e8e8"/>
           <!-- tail fin -->
-          <polygon points="-14,-6 -7,-13 -7,-6" fill="#ddd"/>
+          <polygon points="-21,-9 -10,-18 -10,-9" fill="#ddd"/>
           <!-- left wing -->
-          <polygon points="-4,-6 10,-6 6,0 -8,0" fill="white" opacity=".9"/>
+          <polygon points="-6,-9 15,-9 9,0 -12,0" fill="white" opacity=".9"/>
           <!-- right wing -->
-          <polygon points="-4,6 10,6 6,0 -8,0" fill="white" opacity=".9"/>
+          <polygon points="-6,9 15,9 9,0 -12,0" fill="white" opacity=".9"/>
           <!-- window with face -->
-          <circle cx="2" cy="0" r="9" fill="#b8d4f0" stroke="white" stroke-width=".5"/>
+          <circle cx="3" cy="0" r="15" fill="#b8d4f0" stroke="white" stroke-width=".7"/>
           <image id="faceImg"
-            x="-9" y="-9" width="18" height="18"
+            x="-15" y="-15" width="30" height="30"
             preserveAspectRatio="xMidYMid slice"
             clip-path="url(#faceClip)"
             href="IMG_4625.jpeg"/>
@@ -205,7 +206,7 @@ canvas#stars-c{
 
   <div class="btn-row" id="btnRow">
     <button class="btn-welcome" id="btnWelcome">🎉 Sveika sugrįžus namo!</button>
-    <div class="btn-ams-container" id="amsContainer" style="position:absolute;right:20px;bottom:0">
+    <div class="btn-ams-container" id="amsContainer">
       <button class="btn-ams" id="btnAms">🛫 Grįžti į Amsterdamą</button>
     </div>
   </div>
@@ -297,58 +298,69 @@ animPlane();
 const amsContainer=document.getElementById('amsContainer');
 const btnRow=document.getElementById('btnRow');
 const btnAms=document.getElementById('btnAms');
-let dodgeTimeout;
 let dodgeActive=false;
 
 function dodgeAms(e){
-  e.preventDefault();
+  // Don't dodge on click/touch if already dodging
+  if(e.type === 'mousedown' || e.type === 'touchstart') {
+    if(dodgeActive) {
+      e.preventDefault();
+      return;
+    }
+  }
   
-  // Clear any pending dodge timeout
-  if(dodgeTimeout) clearTimeout(dodgeTimeout);
-  
-  // Prevent dodge spam
+  // Prevent dodge spam for movement events
   if(dodgeActive) return;
   dodgeActive=true;
   
   const rowRect=btnRow.getBoundingClientRect();
-  const btnW=amsContainer.offsetWidth||120;
-  const btnH=amsContainer.offsetHeight||44;
+  const containerRect=amsContainer.getBoundingClientRect();
   
-  // Calculate available space with larger margins
-  const margin=50;
-  const maxX=Math.max(0, rowRect.width-btnW-margin);
-  const maxY=Math.max(0, rowRect.height-btnH-margin);
+  const btnW=120;
+  const btnH=50;
+  
+  // Calculate available space relative to btn-row
+  const margin=30;
+  const maxX=rowRect.width - btnW - margin;
+  const maxY=rowRect.height - btnH - margin;
   
   // Generate random position, avoiding current position
   let nx, ny, distance;
   do {
-    nx=margin+Math.random()*Math.max(0,maxX-margin);
-    ny=margin+Math.random()*Math.max(0,maxY-margin);
-    const currentX=parseInt(amsContainer.style.left||0);
-    const currentY=parseInt(amsContainer.style.top||0);
+    nx=margin+Math.random()*Math.max(0, maxX-margin);
+    ny=margin+Math.random()*Math.max(0, maxY-margin);
+    const currentX=parseInt(amsContainer.style.left||margin);
+    const currentY=parseInt(amsContainer.style.top||margin);
     distance=Math.sqrt((nx-currentX)**2+(ny-currentY)**2);
-  } while(distance<100); // Ensure significant movement
+  } while(distance<80); // Ensure significant movement
   
-  amsContainer.style.position='absolute';
   amsContainer.style.left=nx+'px';
   amsContainer.style.top=ny+'px';
-  amsContainer.style.transition='left .1s ease,top .1s ease';
   
   // Re-enable dodging after short cooldown
-  dodgeTimeout=setTimeout(()=>{dodgeActive=false;},150);
+  setTimeout(()=>{dodgeActive=false;}, 100);
 }
 
-// Dodge on any interaction attempt
+// Dodge on hover and touch
 btnAms.addEventListener('mouseenter',dodgeAms);
 btnAms.addEventListener('mousemove',dodgeAms);
-btnAms.addEventListener('mousedown',(e)=>{e.preventDefault();dodgeAms(e);});
 btnAms.addEventListener('touchstart',dodgeAms,{passive:false});
-btnAms.addEventListener('touchmove',dodgeAms,{passive:false});
 
-btnRow.style.minHeight='100px';
+// Prevent mousedown click
+btnAms.addEventListener('mousedown',(e)=>{
+  e.preventDefault();
+  dodgeAms(e);
+});
+
+btnAms.addEventListener('touchmove',(e)=>{
+  e.preventDefault();
+  dodgeAms(e);
+},{passive:false});
+
+// Initial position
 amsContainer.style.position='absolute';
-amsContainer.style.right='10px';
-amsContainer.style.bottom='5px';
+amsContainer.style.left='20px';
+amsContainer.style.top='20px';
 
 // ── Fireworks ──────────────────────────────────────────
 const fwc=document.getElementById('fw-canvas');
